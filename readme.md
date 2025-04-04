@@ -1,6 +1,6 @@
 # TODO Finder GitHub Action
 
-A simple but powerful GitHub Action that automatically scans your codebase for `//TODO` comments and reports their count and locations whenever code is merged. 
+A simple but powerful GitHub Action that automatically scans your codebase for `//TODO` comments and reports their count and locations whenever code is merged.
 
 ## Overview
 
@@ -23,7 +23,6 @@ That's it! The action will now run automatically whenever code is merged to your
 ## When Does It Run?
 
 The action is triggered on:
-
 - Direct pushes to the main/master branch
 - When a pull request to main/master is merged
 
@@ -38,10 +37,8 @@ The action provides:
 3. **PR Comments**: If triggered by a merged PR, the action will comment on that PR with the results.
 
 Example report:
-
 ```markdown
 # TODO Finder Results
-
 Generated on: Mon Apr 04 15:23:45 UTC 2025
 
 ## Total TODOs found: 7
@@ -59,7 +56,6 @@ Generated on: Mon Apr 04 15:23:45 UTC 2025
 ### File Types
 
 By default, the action scans the following file types:
-
 ```
 *.js, *.jsx, *.ts, *.tsx, *.java, *.py, *.rb, *.php, *.c, *.cpp, *.h, *.hpp, *.cs, *.go, *.swift, *.kt
 ```
@@ -69,7 +65,6 @@ To modify this list, edit the `--include` pattern in the `Find TODOs` step.
 ### Excluded Directories
 
 By default, the action excludes the following directories:
-
 ```
 node_modules, .git, build, dist, vendor
 ```
@@ -78,12 +73,12 @@ To modify this list, edit the `--exclude-dir` pattern in the `Find TODOs` step.
 
 ### TODO Format
 
-This action searches for the exact string `//TODO`. If you use variations like `// TODO` (with a space) or `# TODO` (Python-style), you'll need to modify the grep patterns.
+This action searches for both `//TODO` (without space) and `// TODO` (with space) comment formats. 
 
-For example, to include Python-style comments, change the grep commands to search for both patterns:
+If you want to include additional formats (like Python-style `# TODO` comments), you can modify the grep patterns by adding to the regex pattern:
 
 ```bash
-grep -r --include="*.{js,jsx,ts,tsx,java,py,rb,php,c,cpp,h,hpp,cs,go,swift,kt}" -E "(//TODO|# TODO)" --exclude-dir={node_modules,.git,build,dist,vendor} . | wc -l
+grep -r --include="*.{js,jsx,ts,tsx,java,py,rb,php,c,cpp,h,hpp,cs,go,swift,kt}" -E "(//TODO|// TODO|# TODO)" --exclude-dir={node_modules,.git,build,dist,vendor} . | wc -l
 ```
 
 ## Troubleshooting

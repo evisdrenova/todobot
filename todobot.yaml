@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags
 
@@ -27,8 +27,8 @@ jobs:
           echo "Generated on: $(date)" >> todo_results.md
           echo "" >> todo_results.md
 
-          # Find all TODOs and count them
-          TODO_COUNT=$(grep -r --include="*.{js,jsx,ts,tsx,java,py,rb,php,c,cpp,h,hpp,cs,go,swift,kt}" "//TODO" --exclude-dir={node_modules,.git,build,dist,vendor} . | wc -l)
+          # Find all TODOs and count them (both //TODO and // TODO formats)
+          TODO_COUNT=$(grep -r --include="*.{js,jsx,ts,tsx,java,py,rb,php,c,cpp,h,hpp,cs,go,swift,kt}" -E "(//TODO|// TODO)" --exclude-dir={node_modules,.git,build,dist,vendor} . | wc -l)
 
           # Print the total count
           echo "## Total TODOs found: $TODO_COUNT" >> todo_results.md
@@ -38,8 +38,8 @@ jobs:
             echo "## TODO Locations:" >> todo_results.md
             echo "" >> todo_results.md
             
-            # Find all TODOs and output them with file and line number
-            grep -r --include="*.{js,jsx,ts,tsx,java,py,rb,php,c,cpp,h,hpp,cs,go,swift,kt}" -n "//TODO" --exclude-dir={node_modules,.git,build,dist,vendor} . | while read -r line; do
+            # Find all TODOs and output them with file and line number (both //TODO and // TODO formats)
+            grep -r --include="*.{js,jsx,ts,tsx,java,py,rb,php,c,cpp,h,hpp,cs,go,swift,kt}" -n -E "(//TODO|// TODO)" --exclude-dir={node_modules,.git,build,dist,vendor} . | while read -r line; do
               FILE=$(echo "$line" | cut -d':' -f1)
               LINE_NUM=$(echo "$line" | cut -d':' -f2)
               TODO_TEXT=$(echo "$line" | cut -d':' -f3-)
@@ -59,7 +59,7 @@ jobs:
           cat todo_results.md
 
       - name: Upload TODO results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: todo-results
           path: todo_results.md
@@ -67,7 +67,7 @@ jobs:
       # Optional: Comment on the PR with the results (if this was a PR merge)
       - name: Comment on PR
         if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
