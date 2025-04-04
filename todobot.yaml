@@ -1,0 +1,92 @@
+name: TODO Finder
+
+on:
+  push:
+    branches: [main, master] # Run on merges to main/master branches
+  pull_request:
+    types: [closed] # Also run when PRs are merged
+    branches: [main, master]
+
+jobs:
+  find-todos:
+    name: Find TODOs in codebase
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags
+
+      - name: Find TODOs
+        id: find-todos
+        run: |
+          # Create a results file
+          echo "# TODO Finder Results" > todo_results.md
+          echo "Generated on: $(date)" >> todo_results.md
+          echo "" >> todo_results.md
+
+          # Find all TODOs and count them
+          TODO_COUNT=$(grep -r --include="*.{js,jsx,ts,tsx,java,py,rb,php,c,cpp,h,hpp,cs,go,swift,kt}" "//TODO" --exclude-dir={node_modules,.git,build,dist,vendor} . | wc -l)
+
+          # Print the total count
+          echo "## Total TODOs found: $TODO_COUNT" >> todo_results.md
+          echo "" >> todo_results.md
+
+          if [ $TODO_COUNT -gt 0 ]; then
+            echo "## TODO Locations:" >> todo_results.md
+            echo "" >> todo_results.md
+            
+            # Find all TODOs and output them with file and line number
+            grep -r --include="*.{js,jsx,ts,tsx,java,py,rb,php,c,cpp,h,hpp,cs,go,swift,kt}" -n "//TODO" --exclude-dir={node_modules,.git,build,dist,vendor} . | while read -r line; do
+              FILE=$(echo "$line" | cut -d':' -f1)
+              LINE_NUM=$(echo "$line" | cut -d':' -f2)
+              TODO_TEXT=$(echo "$line" | cut -d':' -f3-)
+              
+              echo "- **$FILE:$LINE_NUM** - \`$TODO_TEXT\`" >> todo_results.md
+            done
+
+            # Set output for the summary
+            echo "todo_count=$TODO_COUNT" >> $GITHUB_OUTPUT
+            echo "::notice title=TODOs Found::Found $TODO_COUNT TODOs in your codebase. Check the output for details."
+          else
+            echo "No TODOs found in the codebase! 🎉" >> todo_results.md
+            echo "todo_count=0" >> $GITHUB_OUTPUT
+            echo "::notice title=No TODOs::Great job! No TODOs found in your codebase."
+          fi
+
+          cat todo_results.md
+
+      - name: Upload TODO results
+        uses: actions/upload-artifact@v3
+        with:
+          name: todo-results
+          path: todo_results.md
+
+      # Optional: Comment on the PR with the results (if this was a PR merge)
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const todoResults = fs.readFileSync('todo_results.md', 'utf8');
+            const todoCount = ${{ steps.find-todos.outputs.todo_count }};
+
+            let commentBody = `## TODO Finder Results\n\n`;
+
+            if (todoCount > 0) {
+              commentBody += `⚠️ Found ${todoCount} TODOs in the codebase after this merge.\n\n`;
+              commentBody += todoResults;
+            } else {
+              commentBody += `✅ No TODOs found in the codebase! Great job keeping technical debt in check.`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
